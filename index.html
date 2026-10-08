@@ -6,38 +6,105 @@
 <nav class="navbar bg-white border-bottom px-3"><span class="fw-bold">POS</span>
   <span><span id="estado" class="badge text-bg-secondary fs-6">…</span>
   <button id="btnSalir" class="btn btn-sm btn-outline-secondary ms-2 d-none">Salir</button></span></nav>
-
-<main class="container py-4" style="max-width:420px">
-  <div id="login" class="card shadow-sm d-none"><div class="card-body">
+<main class="container py-4" style="max-width:900px">
+  <div id="login" class="card shadow-sm d-none mx-auto" style="max-width:420px"><div class="card-body">
     <h5 class="mb-3">Iniciar sesión</h5>
     <input id="u" class="form-control mb-2" placeholder="Usuario" autocomplete="username">
     <input id="p" type="password" class="form-control mb-2" placeholder="Contraseña" autocomplete="current-password">
     <div id="err" class="text-danger small mb-2"></div>
-    <button id="btnEntrar" class="btn btn-primary w-100">Entrar</button>
-  </div></div>
-  <div id="app" class="d-none"><div class="card shadow-sm"><div class="card-body">
-    <h5 id="hola"></h5><p class="small text-muted mb-1">Permisos: <span id="nperm"></span></p>
-    <p class="small text-muted mb-0">Sesión validada. Módulos en las siguientes fases.</p></div></div></div>
-</main>
+    <button id="btnEntrar" class="btn btn-primary w-100">Entrar</button></div></div>
 
-<script src="js/localdb.js"></script>
-<script src="js/auth.js"></script>
+  <div id="app" class="d-none">
+    <div class="card shadow-sm mb-3"><div class="card-body">
+      <h5 id="hola" class="mb-2"></h5>
+      <div class="row g-2">
+        <div class="col-md-6"><label class="form-label small mb-0">Negocio activo</label><select id="selNeg" class="form-select"></select></div>
+        <div class="col-md-6"><label class="form-label small mb-0">Sucursal de este dispositivo</label><select id="selSuc" class="form-select"></select></div>
+      </div><div id="msg" class="small mt-2"></div></div></div>
+
+    <div id="adm" class="d-none">
+      <div class="card shadow-sm mb-3"><div class="card-body">
+        <h6>Sucursales</h6><div class="table-responsive"><table class="table table-sm align-middle"><tbody id="tSuc"></tbody></table></div>
+        <div id="nuevaSuc" class="row g-2 d-none">
+          <div class="col-md-4"><input id="sNom" class="form-control" placeholder="Nombre"></div>
+          <div class="col-md-4"><input id="sDir" class="form-control" placeholder="Dirección"></div>
+          <div class="col-md-2"><input id="sTel" class="form-control" placeholder="Teléfono"></div>
+          <div class="col-md-2"><button id="bSuc" class="btn btn-primary w-100">Crear</button></div></div></div></div>
+
+      <div class="card shadow-sm mb-3"><div class="card-body">
+        <h6>Usuarios por sucursal</h6><div class="table-responsive"><table class="table table-sm align-middle"><tbody id="tAsig"></tbody></table></div>
+        <div id="formAsig" class="row g-2 d-none">
+          <div class="col-md-3"><select id="aU" class="form-select"></select></div>
+          <div class="col-md-3"><select id="aR" class="form-select"></select></div>
+          <div class="col-md-3"><select id="aS" class="form-select"></select></div>
+          <div class="col-md-3"><button id="bAsig" class="btn btn-primary w-100">Asignar</button></div></div></div></div>
+
+      <div id="cardNeg" class="card shadow-sm d-none"><div class="card-body">
+        <h6>Nuevo negocio</h6><div class="row g-2">
+          <div class="col-md-6"><input id="nNom" class="form-control" placeholder="Nombre del negocio"></div>
+          <div class="col-md-3"><input id="nRnc" class="form-control" placeholder="RNC / NIF"></div>
+          <div class="col-md-3"><button id="bNeg" class="btn btn-outline-primary w-100">Crear negocio</button></div></div></div></div>
+    </div>
+  </div>
+</main>
+<script src="js/localdb.js"></script><script src="js/auth.js"></script><script src="js/admin.js"></script>
 <script>
-const $=id=>document.getElementById(id);
+const $=id=>document.getElementById(id); let SES=null;
+const tiene=c=>Auth.tiene(SES,c);
+const aviso=(t,ok)=>{$('msg').className='small mt-2 '+(ok?'text-success':'text-danger');$('msg').textContent=t||''};
 const pintar=async()=>{const s=await Connectivity.status();$('estado').textContent=s.icon+' '+s.text};
 window.addEventListener('pos:status',pintar);pintar();
-async function mostrar(){
-  const s=await Auth.current();
-  $('login').classList.toggle('d-none',!!s); $('app').classList.toggle('d-none',!s); $('btnSalir').classList.toggle('d-none',!s);
-  if(s){$('hola').textContent='Hola, '+s.Nombre;$('nperm').textContent=s.permisos.length;}
+window.addEventListener('online',()=>SES&&render());
+const run=f=>async(...a)=>{try{aviso('');await f(...a);}catch(e){aviso(e.message)}};
+
+async function render(){
+  const on=navigator.onLine; let negs=[];
+  if(on&&tiene('negocios.ver')||on){try{negs=await Admin.api('listarNegocios',{});}catch(e){}}
+  $('selNeg').innerHTML=negs.length?negs.map(n=>`<option value="${esc(n.NegocioID)}" ${n.activo?'selected':''}>${esc(n.Nombre)}</option>`).join(''):`<option>${esc(SES.NegocioID)}</option>`;
+  $('selNeg').disabled=negs.length<2;
+  const sucs=await Admin.sucursales(); const act=sucs.filter(s=>s.Estado==='Activo');
+  let cur=await Admin.sucursalActiva(); if(!act.some(s=>s.SucursalID===cur)){cur=act.length===1||act.length?act[0].SucursalID:null; if(cur)await Admin.setSucursalActiva(cur);}
+  $('selSuc').innerHTML=act.map(s=>`<option value="${esc(s.SucursalID)}" ${s.SucursalID===cur?'selected':''}>${esc(s.Nombre)}</option>`).join('');
+  const admin=on&&(tiene('sucursales.ver')||tiene('usuarios.ver')); $('adm').classList.toggle('d-none',!admin);
+  if(!admin)return;
+  $('nuevaSuc').classList.toggle('d-none',!tiene('sucursales.crear')||SES.sucursales!=='*');
+  $('cardNeg').classList.toggle('d-none',!tiene('negocios.crear'));
+  $('tSuc').innerHTML=sucs.map(s=>`<tr><td>${esc(s.Nombre)}<div class="small text-muted">${esc(s.Direccion||'')} ${esc(s.Telefono||'')}</div></td>
+    <td><span class="badge text-bg-${s.Estado==='Activo'?'success':'secondary'}">${s.Estado}</span></td>
+    <td class="text-end">${tiene('sucursales.editar')?`<button class="btn btn-sm btn-outline-secondary" data-ren="${esc(s.SucursalID)}" data-n="${esc(s.Nombre)}">Renombrar</button>
+    <button class="btn btn-sm btn-outline-${s.Estado==='Activo'?'danger':'success'}" data-est="${esc(s.SucursalID)}" data-e="${s.Estado==='Activo'?'Inactivo':'Activo'}">${s.Estado==='Activo'?'Desactivar':'Activar'}</button>`:''}</td></tr>`).join('');
+  if(tiene('usuarios.ver')){
+    const d=await Admin.api('listarAsignaciones',{});
+    const nu=Object.fromEntries(d.usuarios.map(u=>[u.UsuarioID,u])),nr=Object.fromEntries(d.roles.map(r=>[r.RolID,r.Nombre])),ns=Object.fromEntries(sucs.map(s=>[s.SucursalID,s.Nombre]));
+    $('tAsig').innerHTML=d.asignaciones.map(a=>`<tr><td>${esc((nu[a.UsuarioID]||{}).Nombre||a.UsuarioID)}</td><td>${esc(nr[a.RolID]||a.RolID)}</td><td>${esc(a.SucursalID?ns[a.SucursalID]||a.SucursalID:'Todas')}</td>
+      <td class="text-end">${tiene('usuarios.editar')&&a.UsuarioID!==SES.UsuarioID?`<button class="btn btn-sm btn-outline-danger" data-q='${esc(JSON.stringify(a))}'>Quitar</button>`:''}</td></tr>`).join('');
+    $('formAsig').classList.toggle('d-none',!tiene('usuarios.editar'));
+    $('aU').innerHTML=d.usuarios.filter(u=>u.Estado==='Activo').map(u=>`<option value="${esc(u.UsuarioID)}">${esc(u.Nombre)} (${esc(u.Usuario)})</option>`).join('');
+    $('aR').innerHTML=d.roles.map(r=>`<option value="${esc(r.RolID)}">${esc(r.Nombre)}</option>`).join('');
+    $('aS').innerHTML=act.map(s=>`<option value="${esc(s.SucursalID)}">${esc(s.Nombre)}</option>`).join('');
+  }
 }
-$('btnEntrar').onclick=async()=>{
-  $('err').textContent='';$('btnEntrar').disabled=true;
+async function mostrar(){
+  SES=await Auth.current();
+  $('login').classList.toggle('d-none',!!SES);$('app').classList.toggle('d-none',!SES);$('btnSalir').classList.toggle('d-none',!SES);
+  if(SES){$('hola').textContent='Hola, '+SES.Nombre;await run(render)();}
+}
+$('btnEntrar').onclick=async()=>{$('err').textContent='';$('btnEntrar').disabled=true;
   try{await Auth.login($('u').value,$('p').value);$('p').value='';await mostrar();}
   catch(e){$('err').textContent=navigator.onLine?e.message:'Se necesita Internet para el primer inicio de sesión';}
-  $('btnEntrar').disabled=false;
-};
+  $('btnEntrar').disabled=false;};
 $('p').addEventListener('keydown',e=>{if(e.key==='Enter')$('btnEntrar').click()});
 $('btnSalir').onclick=async()=>{await Auth.logout();await mostrar();};
+$('selSuc').onchange=e=>Admin.setSucursalActiva(e.target.value);
+$('selNeg').onchange=run(async e=>{await Admin.cambiarNegocio(e.target.value);await mostrar();});
+$('bSuc').onclick=run(async()=>{await Admin.api('crearSucursal',{nombre:$('sNom').value,direccion:$('sDir').value,telefono:$('sTel').value});
+  $('sNom').value=$('sDir').value=$('sTel').value='';aviso('Sucursal creada',1);await render();});
+$('bAsig').onclick=run(async()=>{await Admin.api('asignarUsuario',{usuarioId:$('aU').value,rolId:$('aR').value,sucursalId:$('aS').value});aviso('Asignado',1);await render();});
+$('bNeg').onclick=run(async()=>{await Admin.api('crearNegocio',{nombre:$('nNom').value,rnc:$('nRnc').value});$('nNom').value=$('nRnc').value='';aviso('Negocio creado',1);await render();});
+$('tSuc').onclick=run(async e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.ren){const n=prompt('Nuevo nombre',b.dataset.n);if(n)await Admin.api('actualizarSucursal',{sucursalId:b.dataset.ren,nombre:n});}
+  else await Admin.api('actualizarSucursal',{sucursalId:b.dataset.est,estado:b.dataset.e});await render();});
+$('tAsig').onclick=run(async e=>{const b=e.target.closest('button');if(!b||!confirm('¿Quitar asignación?'))return;
+  const a=JSON.parse(b.dataset.q);await Admin.api('quitarAsignacion',{usuarioId:a.UsuarioID,rolId:a.RolID,sucursalId:a.SucursalID});await render();});
 mostrar();
 </script></body></html>
