@@ -35,6 +35,7 @@ const LocalDB = {
       t.onerror = t.onabort = () => rej(t.error);
     });
   },
+  clear(store) { return this._tx(store, 'readwrite', s => s.clear()); },
   put(store, obj) { return this._tx(store, 'readwrite', s => s.put(obj)); },
   putMany(store, arr) { return this._tx(store, 'readwrite', s => { arr.forEach(o => s.put(o)); }); },
   get(store, key) { return this._tx(store, 'readonly', s => s.get(key)); },
