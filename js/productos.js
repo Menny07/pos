@@ -75,8 +75,8 @@ const Productos = {
     Object.keys(tabs).forEach(id => on(id, 'click', () => this.tab(tabs[id])));
   },
   tab(n) {
-    this.q('vInicio').classList.toggle('d-none', n !== 'inicio'); this.q('vProd').classList.toggle('d-none', n !== 'prod');
-    this.q('tabInicio').classList.toggle('active', n === 'inicio'); this.q('tabProd').classList.toggle('active', n === 'prod');
+    const v = { inicio: ['vInicio', 'tabInicio'], prod: ['vProd', 'tabProd'], inv: ['vInv', 'tabInv'] };
+    Object.keys(v).forEach(k => { this.q(v[k][0]).classList.toggle('d-none', k !== n); this.q(v[k][1]).classList.toggle('active', k === n); });
   },
 
   async onSesion(s) {

@@ -22,7 +22,8 @@
         <div class="col-md-6"><label class="form-label small mb-0">Sucursal de este dispositivo</label><select id="selSuc" class="form-select"></select></div>
       </div><div id="msg" class="small mt-2"></div></div></div>
     <ul class="nav nav-pills mb-3"><li class="nav-item"><button id="tabInicio" class="nav-link active">Inicio</button></li>
-      <li class="nav-item"><button id="tabProd" class="nav-link d-none">Productos</button></li></ul>
+      <li class="nav-item"><button id="tabProd" class="nav-link d-none">Productos</button></li>
+      <li class="nav-item"><button id="tabInv" class="nav-link d-none">Inventario</button></li></ul>
     <div id="vInicio">
 
     <div id="adm" class="d-none">
@@ -49,9 +50,10 @@
           <div class="col-md-3"><button id="bNeg" class="btn btn-outline-primary w-100">Crear negocio</button></div></div></div></div>
     </div></div>
     <div id="vProd" class="d-none"></div>
+    <div id="vInv" class="d-none"></div>
   </div>
 </main>
-<script src="js/localdb.js"></script><script src="js/auth.js"></script><script src="js/admin.js"></script><script src="js/productos.js"></script>
+<script src="js/localdb.js"></script><script src="js/auth.js"></script><script src="js/admin.js"></script><script src="js/productos.js"></script><script src="js/inventario.js"></script>
 <script>
 const $=id=>document.getElementById(id); let SES=null;
 const tiene=c=>Auth.tiene(SES,c);
@@ -91,7 +93,7 @@ async function render(){
 async function mostrar(){
   SES=await Auth.current();
   $('login').classList.toggle('d-none',!!SES);$('app').classList.toggle('d-none',!SES);$('btnSalir').classList.toggle('d-none',!SES);
-  if(SES){$('hola').textContent='Hola, '+SES.Nombre;await run(render)();Productos.onSesion(SES);}
+  if(SES){$('hola').textContent='Hola, '+SES.Nombre;await run(render)();Productos.onSesion(SES).then(()=>Inventario.onSesion(SES));}
 }
 $('btnEntrar').onclick=async()=>{$('err').textContent='';$('btnEntrar').disabled=true;
   try{await Auth.login($('u').value,$('p').value);$('p').value='';await mostrar();}
