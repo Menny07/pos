@@ -6,7 +6,7 @@
 <nav class="navbar bg-white border-bottom px-3"><span class="fw-bold">POS</span>
   <span><span id="estado" class="badge text-bg-secondary fs-6">…</span>
   <button id="btnSalir" class="btn btn-sm btn-outline-secondary ms-2 d-none">Salir</button></span></nav>
-<main class="container py-4" style="max-width:900px">
+<main class="container py-4" style="max-width:1100px">
   <div id="login" class="card shadow-sm d-none mx-auto" style="max-width:420px"><div class="card-body">
     <h5 class="mb-3">Iniciar sesión</h5>
     <input id="u" class="form-control mb-2" placeholder="Usuario" autocomplete="username">
@@ -22,6 +22,8 @@
         <div class="col-md-6"><label class="form-label small mb-0">Sucursal de este dispositivo</label><select id="selSuc" class="form-select"></select></div>
       </div><div id="msg" class="small mt-2"></div></div></div>
     <ul class="nav nav-pills mb-3"><li class="nav-item"><button id="tabInicio" class="nav-link active">Inicio</button></li>
+      <li class="nav-item"><button id="tabPos" class="nav-link d-none fw-bold">POS</button></li>
+      <li class="nav-item"><button id="tabVen" class="nav-link d-none">Ventas</button></li>
       <li class="nav-item"><button id="tabProd" class="nav-link d-none">Productos</button></li>
       <li class="nav-item"><button id="tabInv" class="nav-link d-none">Inventario</button></li>
       <li class="nav-item"><button id="tabCli" class="nav-link d-none">Clientes</button></li>
@@ -55,9 +57,11 @@
     <div id="vInv" class="d-none"></div>
     <div id="vCli" class="d-none"></div>
     <div id="vPrv" class="d-none"></div>
+    <div id="vPos" class="d-none"></div>
+    <div id="vVen" class="d-none"></div>
   </div>
 </main>
-<script src="js/localdb.js"></script><script src="js/auth.js"></script><script src="js/admin.js"></script><script src="js/productos.js"></script><script src="js/inventario.js"></script><script src="js/terceros.js"></script>
+<script src="js/localdb.js"></script><script src="js/auth.js"></script><script src="js/admin.js"></script><script src="js/productos.js"></script><script src="js/inventario.js"></script><script src="js/terceros.js"></script><script src="js/pos.js"></script>
 <script>
 const $=id=>document.getElementById(id); let SES=null;
 const tiene=c=>Auth.tiene(SES,c);
@@ -97,7 +101,7 @@ async function render(){
 async function mostrar(){
   SES=await Auth.current();
   $('login').classList.toggle('d-none',!!SES);$('app').classList.toggle('d-none',!SES);$('btnSalir').classList.toggle('d-none',!SES);
-  if(SES){$('hola').textContent='Hola, '+SES.Nombre;await run(render)();Productos.onSesion(SES).then(()=>{Inventario.onSesion(SES);Clientes.onSesion(SES);Proveedores.onSesion(SES);});}
+  if(SES){$('hola').textContent='Hola, '+SES.Nombre;await run(render)();Productos.onSesion(SES).then(()=>{Inventario.onSesion(SES);Clientes.onSesion(SES);Proveedores.onSesion(SES);Pos.onSesion(SES);Ventas.onSesion(SES);});}
 }
 $('btnEntrar').onclick=async()=>{$('err').textContent='';$('btnEntrar').disabled=true;
   try{await Auth.login($('u').value,$('p').value);$('p').value='';await mostrar();}
