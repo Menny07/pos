@@ -1,5 +1,5 @@
-const CACHE = 'pos-shell-v5';
-const SHELL = ['./', 'index.html', 'js/localdb.js', 'js/auth.js', 'js/admin.js', 'js/productos.js', 'js/inventario.js', 'manifest.json'];
+const CACHE = 'pos-shell-v6';
+const SHELL = ['./', 'index.html', 'js/localdb.js', 'js/auth.js', 'js/admin.js', 'js/productos.js', 'js/inventario.js', 'js/terceros.js', 'manifest.json'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))));
 self.addEventListener('activate', e => e.waitUntil(
   caches.keys().then(k => Promise.all(k.filter(x => x !== CACHE).map(x => caches.delete(x)))).then(() => self.clients.claim())));
